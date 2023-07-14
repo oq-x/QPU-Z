@@ -15,10 +15,11 @@ import (
 func CPUPage(assets embed.FS) fyne.CanvasObject {
 	cpu := specs.GetCPU()
 	var extra map[string]string
+	var gen string
 	if cpu.Vendor == "Intel" {
 		extra = util.IntelArkGetCPU(util.URLCPUName(cpu.Model))
+		gen = util.IntelArkGetGeneration(extra["CodeNameText"])
 	}
-	gen := util.IntelArkGetGeneration(extra["CodeNameText"])
 	if cpu.Count >= 2 {
 		cpu.Model += fmt.Sprintf(" (x%d)", cpu.Count)
 	}

@@ -2,6 +2,7 @@ package specs
 
 import (
 	"fmt"
+	"qpu-z/util"
 	"strings"
 )
 
@@ -15,9 +16,9 @@ type StickRAM struct {
 }
 
 func GetMemory() map[string]StickRAM {
-	output := Command("system_profiler SPMemoryDataType | awk '/Size:/{print \"\";print} /Type:|Speed:|Serial Number:|Manufacturer/'")
+	output, _ := util.Command("system_profiler SPMemoryDataType | awk '/Size:/{print \"\";print} /Type:|Speed:|Serial Number:|Manufacturer/'")
 	sticks := make(map[string]StickRAM)
-	for i, stick := range strings.Split(output, "\n\n") {
+	for i, stick := range strings.Split(string(output), "\n\n") {
 		id := fmt.Sprint(i)
 		data := make(map[string]string)
 		for _, l := range strings.Split(stick, "\n") {

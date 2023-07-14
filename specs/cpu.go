@@ -1,18 +1,10 @@
 package specs
 
 import (
+	"qpu-z/util"
 	"strconv"
 	"strings"
 )
-
-/*func IntelGen(family string, model string) string {
-	switch family {
-	case "6":
-		{
-
-		}
-	}
-}*/
 
 type CPU struct {
 	Model        string
@@ -24,11 +16,12 @@ type CPU struct {
 }
 
 func GetCPU() CPU {
-	cmd := Command("sysctl machdep.cpu")
-	count, _ := strconv.Atoi(strings.TrimSpace(strings.Split(Command("sysctl hw.packages"), ":")[1]))
+	cmd, _ := util.Command("sysctl machdep.cpu")
+	c, _ := util.Command("sysctl hw.packages")
+	count, _ := strconv.Atoi(strings.TrimSpace(strings.Split(string(c), ":")[1]))
 
 	data := make(map[string]interface{})
-	for _, l := range strings.Split(cmd, "\n") {
+	for _, l := range strings.Split(string(cmd), "\n") {
 		if l == "" {
 			continue
 		}

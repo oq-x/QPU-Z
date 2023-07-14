@@ -75,8 +75,6 @@ func ParsePCI(v string) map[string]Device {
 						Devices: make(map[string]Device),
 					}
 					if len(sp) > i+1 && strings.HasPrefix(sp[i+1], "\t\t") {
-						//fmt.Println(sp[i+1])
-						//fmt.Printf("end of %s %s %s\n", currentVendor.Name, ext[0], sp[i+1])
 						currentDevice = currentVendor.Devices[ext[0]]
 					}
 				} else {

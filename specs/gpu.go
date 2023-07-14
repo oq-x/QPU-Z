@@ -1,19 +1,21 @@
 package specs
 
 import (
+	"fmt"
+	"math"
 	"qpu-z/util"
 	"strconv"
 	"strings"
 )
 
 type GPU struct {
-	Model    string
-	DeviceID string
-	VendorID string
-	Vendor   string
-	VRAM     uint64
-	VRAMText string
-	Core     string
+	Model       string
+	DeviceID    string
+	VendorID    string
+	SubsystemID string
+	Vendor      string
+	VRAM        string
+	Core        string
 }
 
 func CalculateVRAM(data string) uint64 {
@@ -27,52 +29,64 @@ func CalculateVRAM(data string) uint64 {
 	return uint64(num)
 }
 
-func GetVendor(data string) (name string, id string) {
-	sp := strings.Split(data, "(")
-	if len(sp) == 1 {
-		return data, ""
+func GetVendor(id string) string {
+	switch id {
+	case "8086":
+		{
+			return "Intel"
+		}
+	case "1002":
+		{
+			return "AMD"
+		}
+	case "10de":
+		{
+			return "Nvidia"
+		}
 	}
-	name = strings.TrimSpace(sp[0])
-	id = strings.TrimSuffix(sp[1], ")")
-	return
+	return "Unknown"
+}
+
+func parseData(data []byte) string {
+	str := dataString(data)
+	sp := strings.Split(str, "")
+	sp = sp[:len(sp)-4]
+	return fmt.Sprintf("%s%s%s%s", sp[2], sp[3], sp[0], sp[1])
+}
+
+func dataString(data []byte) string {
+	var builder strings.Builder
+	for _, b := range data {
+		builder.WriteString(fmt.Sprintf("%02X", b))
+	}
+	return builder.String()
 }
 
 func GetGPUs() []GPU {
-	output := Command("system_profiler SPDisplaysDataType | awk '/Chipset Model:/{print \"\";print} /Vendor:|Device ID:|VRAM \\(Total\\):/'")
-	gs := strings.Split(output, "\n\n")
+	gpusd := make(map[string]map[string]interface{})
+	for k, v := range util.IORegistry.Devices {
+		if v["IOName"] == "display" {
+			gpusd[k] = v
+		}
+	}
 	gpus := make([]GPU, 0)
-	for _, gpu := range gs {
-		spl := strings.Split(gpu, "\n")
-		if spl[0] == "" {
-			spl = spl[1:]
-			gpu = strings.Join(spl, "\n")
-		}
-		if !strings.HasPrefix(gpu, "      ") {
-			continue
-		}
-		g := make(map[string]string)
-		for _, l := range spl {
-			if l == "" {
-				continue
-			}
-			l = strings.TrimSpace(l)
-			sp := strings.Split(l, ":")
-			key := strings.TrimSpace(sp[0])
-			value := strings.TrimSpace(sp[1])
-			g[key] = value
-		}
-		vname, vid := GetVendor(g["Vendor"])
-		if vid == "" && vname == "Intel" {
-			vid = "8086"
-		}
-		devid := strings.Split(g["Device ID"], "x")[1]
-		vevid := strings.Split(vid, "x")[1]
-		gpuExtended := util.GetDevice(vevid, devid)
+	for _, g := range gpusd {
+		vendorId := parseData(g["vendor-id"].([]byte))
+		deviceId := parseData(g["device-id"].([]byte))
+		subsystemId := parseData(g["subsystem-vendor-id"].([]byte)) + parseData(g["subsystem-id"].([]byte))
+		gpuExtended := util.GetDevice(vendorId, deviceId)
 		core := strings.Split(gpuExtended.Name, "[")[0]
-		gpu := GPU{Model: g["Chipset Model"], DeviceID: g["Device ID"], Vendor: vname, VendorID: vid, VRAMText: g["VRAM (Total)"], Core: core}
-		if g["VRAM (Total)"] != "" {
-			gpu.VRAM = CalculateVRAM(g["VRAM (Total)"])
+		vram := ""
+		if g["VRAM,totalMB"] != nil {
+			v := g["VRAM,totalMB"].(uint64)
+			if v < 1024 {
+				vram = fmt.Sprintf("%dMB", v)
+			} else {
+				v := float64(v) / 1024
+				vram = fmt.Sprintf("%dGB", int(math.Round(v)))
+			}
 		}
+		gpu := GPU{Model: string(g["model"].([]byte)), DeviceID: deviceId, VendorID: vendorId, Core: core, SubsystemID: subsystemId, Vendor: GetVendor(vendorId), VRAM: vram}
 		gpus = append(gpus, gpu)
 	}
 	return gpus

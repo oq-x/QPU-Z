@@ -1,6 +1,7 @@
 package specs
 
 import (
+	"qpu-z/util"
 	"strings"
 )
 
@@ -17,9 +18,9 @@ type Board struct {
 }
 
 func GetAppleBoard() AppleBoard {
-	datastr := Command("ioreg -l -p IODeviceTree -r -n / -d 1 | grep -iE 'board-id\"|manufacturer\"|model\"|IOPlatformSerialNumber' | awk '{$1=$1;print}' FS='[<>]' OFS=' '")
+	datastr, _ := util.Command("ioreg -l -p IODeviceTree -r -n / -d 1 | grep -iE 'board-id\"|manufacturer\"|model\"|IOPlatformSerialNumber' | awk '{$1=$1;print}' FS='[<>]' OFS=' '")
 	data := make(map[string]string)
-	for _, l := range strings.Split(datastr, "\n") {
+	for _, l := range strings.Split(string(datastr), "\n") {
 		l = strings.TrimSpace(l)
 		if l == "" {
 			continue
@@ -33,9 +34,9 @@ func GetAppleBoard() AppleBoard {
 }
 
 func GetBoard() (Board, bool) {
-	datastr := Command("nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-vendor 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-board")
+	datastr, _ := util.Command("nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-vendor 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-board")
 	board := Board{}
-	for _, l := range strings.Split(datastr, "\n") {
+	for _, l := range strings.Split(string(datastr), "\n") {
 		if strings.HasPrefix(l, "nvram: Error") {
 			return board, false
 		}

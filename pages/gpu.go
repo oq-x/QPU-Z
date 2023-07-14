@@ -24,12 +24,17 @@ func GPUPage(assets embed.FS) fyne.CanvasObject {
 		devid := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Device ID: %s", gpu.DeviceID))
 		core := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Core: %s", gpu.Core))
 		vram := widget.NewRichTextFromMarkdown(fmt.Sprintf("## VRAM: %s", gpu.VRAM))
-		card := widget.NewCard(gpu.Model, "", container.NewHBox(vendorLogo, container.NewVBox(vendor, devid), container.NewVBox()))
+		model := widget.NewRichTextFromMarkdown(fmt.Sprintf("# %s", gpu.Model))
+		internal := widget.NewRichTextFromMarkdown("### Internal")
+		card := widget.NewCard("", "", container.NewVBox(container.NewHBox(model), container.NewHBox(vendorLogo, container.NewVBox(vendor, devid), container.NewVBox())))
+		if gpu.Internal {
+			card.Content.(*fyne.Container).Objects[0].(*fyne.Container).Add(internal)
+		}
 		if gpu.Core != "" {
-			card.Content.(*fyne.Container).Objects[2].(*fyne.Container).Add(core)
+			card.Content.(*fyne.Container).Objects[1].(*fyne.Container).Objects[2].(*fyne.Container).Add(core)
 		}
 		if gpu.VRAM != "" {
-			card.Content.(*fyne.Container).Objects[2].(*fyne.Container).Add(vram)
+			card.Content.(*fyne.Container).Objects[1].(*fyne.Container).Objects[2].(*fyne.Container).Add(vram)
 		}
 		cont.Add(card)
 	}

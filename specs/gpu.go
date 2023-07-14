@@ -16,6 +16,7 @@ type GPU struct {
 	Vendor      string
 	VRAM        string
 	Core        string
+	Internal    bool
 }
 
 func CalculateVRAM(data string) uint64 {
@@ -87,6 +88,9 @@ func GetGPUs() []GPU {
 			}
 		}
 		gpu := GPU{Model: string(g["model"].([]byte)), DeviceID: deviceId, VendorID: vendorId, Core: core, SubsystemID: subsystemId, Vendor: GetVendor(vendorId), VRAM: vram}
+		if g["IORegistryEntryName"] == "IGPU" {
+			gpu.Internal = true
+		}
 		gpus = append(gpus, gpu)
 	}
 	return gpus

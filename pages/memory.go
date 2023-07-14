@@ -32,7 +32,7 @@ func MemoryPage() fyne.CanvasObject {
 			return false
 		}
 		if ids[num] != "" {
-			return true
+			return sticks[tni].Type != "Empty"
 		}
 		return false
 	}, func(b bool) fyne.CanvasObject {

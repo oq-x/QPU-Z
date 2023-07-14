@@ -14,7 +14,7 @@ type Device struct {
 	Devices map[string]Device
 }
 
-func ParsePCI(v string) map[string]Device {
+func ParsePCI() map[string]Device {
 	if deviceCache == nil {
 		vendors := make(map[string]Device)
 		res, err := http.Get("https://raw.githubusercontent.com/pciutils/pciids/master/pci.ids")
@@ -36,17 +36,8 @@ func ParsePCI(v string) map[string]Device {
 		sp := strings.Split(nc, "\n")
 		var currentVendor Device
 		var currentDevice Device
-		do := false
 		for i, l := range sp {
 			if !strings.HasPrefix(l, "\t") {
-				if !strings.HasPrefix(strings.TrimSpace(l), v) {
-					if currentVendor.Name != "" {
-						break
-					}
-					continue
-				} else {
-					do = true
-				}
 				if len(sp) > i+1 && !strings.HasPrefix(sp[i+1], "\t") {
 					continue
 				}
@@ -61,9 +52,6 @@ func ParsePCI(v string) map[string]Device {
 				}
 				vendors[ext[0]] = currentVendor
 			} else {
-				if !do {
-					continue
-				}
 				if !strings.HasPrefix(l, "\t\t") {
 					ext := strings.Split(strings.TrimSpace(l), "  ")
 					if len(ext) < 2 {
@@ -95,7 +83,7 @@ func ParsePCI(v string) map[string]Device {
 }
 
 func GetDevice(v string, d string) Device {
-	vendors := ParsePCI(v)
+	vendors := ParsePCI()
 	vendor := vendors[strings.ToLower(v)]
 	if vendor.ID == "" {
 		return Device{}

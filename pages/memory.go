@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -39,20 +37,76 @@ func MemoryPage() fyne.CanvasObject {
 		if b {
 			return widget.NewRichTextFromMarkdown("")
 		}
-		return container.NewVBox(layout.NewSpacer(), widget.NewRichTextFromMarkdown("## TEXT\n## TEXT\n## TEXT\n## TEXT"), layout.NewSpacer())
+		return widget.NewRichText(
+			&widget.TextSegment{
+				Text:  "Size: ",
+				Style: widget.RichTextStyleStrong,
+			},
+			&widget.TextSegment{},
+
+			&widget.SeparatorSegment{},
+
+			&widget.TextSegment{
+				Text:  "Type: ",
+				Style: widget.RichTextStyleStrong,
+			},
+			&widget.TextSegment{},
+
+			&widget.SeparatorSegment{},
+
+			&widget.TextSegment{
+				Text:  "Speed: ",
+				Style: widget.RichTextStyleStrong,
+			},
+			&widget.TextSegment{},
+
+			&widget.SeparatorSegment{},
+
+			&widget.TextSegment{Text: "Serial Number", Style: widget.RichTextStyleStrong},
+			&widget.TextSegment{},
+		)
 	}, func(tni widget.TreeNodeID, b bool, co fyne.CanvasObject) {
 		if b {
 			co.(*widget.RichText).ParseMarkdown(fmt.Sprintf("### %s", tni))
 			return
 		}
 		stick := sticks[strings.Split(tni, "\\")[0]]
-		text := fmt.Sprintf("## Size: %s\n", stick.Size)
-		text += fmt.Sprintf("## Type: %s\n", stick.Type)
-		text += fmt.Sprintf("## Speed: %s\n", stick.Speed)
-		if stick.SerialNumber != "" {
-			text += fmt.Sprintf("## Serial Number: %s\n", stick.SerialNumber)
+		co.(*widget.RichText).Segments = []widget.RichTextSegment{
+			&widget.TextSegment{
+				Text:  "Size: ",
+				Style: widget.RichTextStyleStrong,
+			},
+			&widget.TextSegment{Text: stick.Size},
+
+			&widget.SeparatorSegment{},
+
+			&widget.TextSegment{
+				Text:  "Type: ",
+				Style: widget.RichTextStyleStrong,
+			},
+			&widget.TextSegment{Text: stick.Type},
+
+			&widget.SeparatorSegment{},
+
+			&widget.TextSegment{
+				Text:  "Speed: ",
+				Style: widget.RichTextStyleStrong,
+			},
+			&widget.TextSegment{Text: stick.Speed},
 		}
-		co.(*fyne.Container).Objects[1] = widget.NewRichTextFromMarkdown(text)
+
+		if stick.SerialNumber != "" {
+			co.(*widget.RichText).Segments = append(co.(*widget.RichText).Segments,
+				&widget.SeparatorSegment{},
+				&widget.TextSegment{
+					Text:  "Serial Number: ",
+					Style: widget.RichTextStyleStrong,
+				},
+				&widget.TextSegment{Text: stick.SerialNumber},
+			)
+		}
+		co.(*widget.RichText).Refresh()
 	})
+	tree.OpenAllBranches()
 	return tree
 }

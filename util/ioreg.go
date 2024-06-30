@@ -14,7 +14,7 @@ type ioregistry struct {
 
 func Command(command string) ([]byte, error) {
 	cmd := exec.Command("sh", "-c", command)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
 	}

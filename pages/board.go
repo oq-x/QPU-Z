@@ -12,30 +12,88 @@ import (
 
 var appleBoard specs.AppleBoard
 
-func HackintoshBoardPage() fyne.CanvasObject {
+func OpenCoreBoardPage() fyne.CanvasObject {
 	board, ok := specs.GetBoard()
 	if !ok {
-		text := widget.NewRichTextFromMarkdown("## If you are running a hackintosh, please make sure `Misc -> Security -> ExposeSensitiveData` is set to `8` or higher in `config.plist`.")
-		return widget.NewCard("Couldn't get board data.", "", text)
+		text := widget.NewRichTextFromMarkdown("If you are running the OpenCore bootloader, please make sure `Misc -> Security -> ExposeSensitiveData` is set to `8` or higher (`10` is recommended) in `config.plist`.")
+		text.Wrapping = fyne.TextWrapBreak
+		return widget.NewCard("Can't get board data", "", text)
 	}
-	vendor := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Vendor: %s", board.Vendor))
-	model := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Model: %s", board.Model))
-	return container.NewVBox(vendor, model)
+	vendor := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "Vendor: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: board.Vendor,
+		},
+	)
+	model := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "Model: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: fmt.Sprintf("%s (%s)", board.Product, board.Board),
+		},
+	)
+	opencoreVersion := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "OpenCore Version: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: board.OpenCoreVersion,
+		},
+	)
+	return container.NewVBox(vendor, model, opencoreVersion)
 }
 
 func AppleBoardPage() fyne.CanvasObject {
 	appleBoard = specs.GetAppleBoard()
-	manufacturer := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Manufacturer: %s", appleBoard.Manufacturer))
-	model := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Model: %s", appleBoard.Model))
-	serialNumber := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Serial Number: %s", appleBoard.SerialNumber))
-	boardID := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Board ID: %s", appleBoard.BoardID))
+	manufacturer := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "Manufacturer: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: appleBoard.Manufacturer,
+		},
+	)
+	model := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "Model: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: appleBoard.Model,
+		},
+	)
+	serialNumber := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "Serial Number: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: appleBoard.SerialNumber,
+		},
+	)
+	boardID := widget.NewRichText(
+		&widget.TextSegment{
+			Text:  "Board ID: ",
+			Style: widget.RichTextStyleStrong,
+		},
+		&widget.TextSegment{
+			Text: appleBoard.BoardID,
+		},
+	)
 	return container.NewVBox(manufacturer, model, serialNumber, boardID)
 }
 
 func BoardPage() fyne.CanvasObject {
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Apple", AppleBoardPage()),
-		container.NewTabItem("Hackintosh", HackintoshBoardPage()),
+		container.NewTabItem("OpenCore", OpenCoreBoardPage()),
 	)
 	if strings.HasPrefix(appleBoard.Manufacturer, "Apple") {
 		tabs.DisableIndex(1)

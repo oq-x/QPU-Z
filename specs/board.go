@@ -13,8 +13,9 @@ type AppleBoard struct {
 }
 
 type Board struct {
-	Vendor string
-	Model  string
+	Vendor          string
+	Product, Board  string
+	OpenCoreVersion string
 }
 
 func GetAppleBoard() AppleBoard {
@@ -34,18 +35,26 @@ func GetAppleBoard() AppleBoard {
 }
 
 func GetBoard() (Board, bool) {
-	datastr, _ := util.Command("nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-vendor 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-board")
+	datastr, _ := util.Command("nvram 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-vendor 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-product 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-board 4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:opencore-version")
 	board := Board{}
 	for _, l := range strings.Split(string(datastr), "\n") {
 		if strings.HasPrefix(l, "nvram: Error") {
-			return board, false
+			continue
 		}
-		l = strings.TrimPrefix(l, "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:oem-")
-		if strings.HasPrefix(l, "vendor") {
-			board.Vendor = strings.TrimSpace(strings.TrimPrefix(l, "vendor"))
-		} else if strings.HasPrefix(l, "board") {
-			board.Model = strings.TrimSpace(strings.TrimPrefix(l, "board"))
+		l = strings.TrimPrefix(l, "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102:")
+		switch {
+		case strings.HasPrefix(l, "oem-vendor"):
+			board.Vendor = strings.TrimSpace(strings.TrimPrefix(l, "oem-vendor"))
+		case strings.HasPrefix(l, "oem-product"):
+			board.Product = strings.TrimSpace(strings.TrimPrefix(l, "oem-product"))
+		case strings.HasPrefix(l, "oem-board"):
+			board.Board = strings.TrimSpace(strings.TrimPrefix(l, "oem-board"))
+		case strings.HasPrefix(l, "opencore-version"):
+			board.OpenCoreVersion = strings.TrimSpace(strings.TrimPrefix(l, "opencore-version"))
 		}
+	}
+	if board.Board == "" {
+		return board, false
 	}
 	return board, true
 }

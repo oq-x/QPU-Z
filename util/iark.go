@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ func URLCPUName(name string) string {
 	name = strings.ReplaceAll(name, "(G)", "")
 	name = strings.ReplaceAll(name, "CPU", "Processor")
 	name = strings.ReplaceAll(name, "@", "")
-	name = strings.ReplaceAll(name, " ", "+")
+	name = strings.ReplaceAll(name, " ", "%20")
 	if strings.HasSuffix(name, "Hz") {
 		name = strings.Split(name, "++")[0]
 	}
@@ -67,6 +68,7 @@ func intelArkGetCPU(url string) map[string]string {
 func IntelArkGetCPU(query string) map[string]string {
 	res, _ := http.Get(fmt.Sprintf("https://ark.intel.com/content/www/us/en/ark/search.html?_charset_=UTF-8&q=%s", query))
 	d, _ := io.ReadAll(res.Body)
+	os.WriteFile("res.html", d, 0755)
 	for _, l := range strings.Split(string(d), "\n") {
 		if strings.Contains(l, "href=\"/content/www/us/en/ark/products/") && strings.Contains(l, "Processor") && !strings.Contains(l, "Family") {
 			url := strings.Split(strings.Split(l, "href=\"")[1], "\"")[0]

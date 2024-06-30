@@ -7,7 +7,9 @@ import (
 	"qpu-z/util"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -17,24 +19,65 @@ func GPUPage(assets embed.FS) fyne.CanvasObject {
 	for _, gpu := range gpus {
 		vendorText := gpu.Vendor
 		if gpu.VendorID != "" {
-			vendorText += fmt.Sprintf(" (%s)", gpu.VendorID)
+			vendorText += fmt.Sprintf(" (0x%s)", gpu.VendorID)
 		}
-		vendor := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Vendor ID: %s", vendorText))
 		vendorLogo := util.GetIcon(assets, gpu.Vendor, true)
-		devid := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Device ID: %s", gpu.DeviceID))
-		core := widget.NewRichTextFromMarkdown(fmt.Sprintf("## Core: %s", gpu.Core))
-		vram := widget.NewRichTextFromMarkdown(fmt.Sprintf("## VRAM: %s", gpu.VRAM))
+		vendorLogo.FillMode = canvas.ImageFillContain
+		vendorLogo.ScaleMode = canvas.ImageScaleFastest
+
+		vendor := widget.NewRichText(
+			&widget.TextSegment{
+				Style: widget.RichTextStyleStrong,
+				Text:  "Vendor ID: ",
+			},
+			&widget.TextSegment{
+				Text: vendorText,
+			},
+		)
+		devid := widget.NewRichText(
+			&widget.TextSegment{
+				Style: widget.RichTextStyleStrong,
+				Text:  "Device ID: ",
+			},
+			&widget.TextSegment{
+				Text: "0x" + gpu.DeviceID,
+			},
+		)
+		core := widget.NewRichText(
+			&widget.TextSegment{
+				Style: widget.RichTextStyleStrong,
+				Text:  "Core: ",
+			},
+			&widget.TextSegment{
+				Text: gpu.Core,
+			},
+		)
+		vram := widget.NewRichText(
+			&widget.TextSegment{
+				Style: widget.RichTextStyleStrong,
+				Text:  "Video-RAM: ",
+			},
+			&widget.TextSegment{
+				Text: gpu.VRAM,
+			},
+		)
 		model := widget.NewRichTextFromMarkdown(fmt.Sprintf("# %s", gpu.Model))
-		internal := widget.NewRichTextFromMarkdown("### Internal")
-		card := widget.NewCard("", "", container.NewVBox(container.NewHBox(model), container.NewHBox(vendorLogo, container.NewVBox(vendor, devid), container.NewVBox())))
+
+		internalText := widget.NewLabel("Internal")
+		internalText.TextStyle.Bold = true
+		internalRect := canvas.NewRectangle(theme.Color(theme.ColorNamePrimary))
+		internalRect.CornerRadius = 20
+		internal := container.NewStack(internalRect, internalText)
+
+		card := widget.NewCard("", "", container.NewVBox(container.NewHBox(model), container.NewHBox(vendorLogo, container.NewVBox(vendor, devid))))
 		if gpu.Internal {
-			card.Content.(*fyne.Container).Objects[0].(*fyne.Container).Add(internal)
+			card.Content.(*fyne.Container).Objects[0].(*fyne.Container).Add(container.NewCenter(internal))
 		}
 		if gpu.Core != "" {
-			card.Content.(*fyne.Container).Objects[1].(*fyne.Container).Objects[2].(*fyne.Container).Add(core)
+			card.Content.(*fyne.Container).Objects[1].(*fyne.Container).Objects[1].(*fyne.Container).Add(core)
 		}
 		if gpu.VRAM != "" {
-			card.Content.(*fyne.Container).Objects[1].(*fyne.Container).Objects[2].(*fyne.Container).Add(vram)
+			card.Content.(*fyne.Container).Objects[1].(*fyne.Container).Objects[1].(*fyne.Container).Add(vram)
 		}
 		cont.Add(card)
 	}

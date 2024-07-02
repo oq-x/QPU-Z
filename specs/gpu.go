@@ -65,9 +65,9 @@ func dataString(data []byte) string {
 
 func GetGPUs() []GPU {
 	gpusd := make(map[string]map[string]interface{})
-	for k, v := range util.IORegistry.Devices {
+	for _, v := range util.IORegistry.PciDevices {
 		if v["IOName"] == "display" {
-			gpusd[k] = v
+			gpusd[v.IORegistryEntryName()] = v
 		}
 	}
 	gpus := make([]GPU, 0)

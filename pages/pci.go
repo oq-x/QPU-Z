@@ -12,31 +12,23 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func cond[T any](v bool, t, f T) T {
-	if v {
-		return t
-	} else {
-		return f
-	}
-}
-
 func PCIPage() fyne.CanvasObject {
 	accel := util.IORegistry.GPUAccelerated
 	accelText := widget.NewRichText(
 		&widget.TextSegment{
 			Style: widget.RichTextStyle{
-				ColorName: cond(accel, theme.ColorNameSuccess, theme.ColorNameError),
+				ColorName: util.Condition(accel, theme.ColorNameSuccess, theme.ColorNameError),
 				TextStyle: fyne.TextStyle{
 					Bold: true,
 				},
 			},
-			Text: cond(accel, "Graphical Acceleration Enabled", "No Graphical Acceleration"),
+			Text: util.Condition(accel, "Graphical Acceleration Enabled", "No Graphical Acceleration"),
 		},
 	)
 
 	var deviceTree = container.NewVBox()
 
-	for _, d := range util.IORegistry.Devices {
+	for _, d := range util.IORegistry.PciDevices {
 		vid, _ := d["vendor-id"].([]byte)
 		id, _ := d["device-id"].([]byte)
 
@@ -44,6 +36,7 @@ func PCIPage() fyne.CanvasObject {
 		sid, _ := d["subsystem-id"].([]byte)
 
 		kexts, kok := d["IORegistryEntryChildren"].([]any)
+		var kextamount int
 
 		vendor, ok := util.PCIDeviceCache.Vendor(util.PlistDataToLEHex(vid))
 		if !ok {
@@ -71,9 +64,7 @@ func PCIPage() fyne.CanvasObject {
 
 		model, ok := d["model"]
 		if ok {
-			m := string(model.([]byte))
-
-			name = fmt.Sprintf("%s - %s", m, name)
+			name = string(model.([]byte))
 		}
 
 		rt := widget.NewRichText(
@@ -83,6 +74,24 @@ func PCIPage() fyne.CanvasObject {
 				Text: name,
 			},
 		)
+
+		classcode := d.DataKey("class-code")
+		if len(classcode) == 4 {
+			cl := fmt.Sprintf("%02x", classcode[2])
+			subcl := fmt.Sprintf("%02x", classcode[1])
+
+			class, ok := util.PCIClassCache.Subclass(cl, subcl)
+			if ok {
+				rt.Segments = append(rt.Segments,
+					&widget.TextSegment{
+						Style: widget.RichTextStyleStrong,
+
+						Text: "Type: ",
+					},
+					&widget.TextSegment{Text: class.Name},
+				)
+			}
+		}
 
 		if kok {
 			for _, k := range kexts {
@@ -94,6 +103,7 @@ func PCIPage() fyne.CanvasObject {
 				rt.Segments = append(rt.Segments, &widget.TextSegment{
 					Text: fmt.Sprintf("%s (%s)", kext["IORegistryEntryName"].(string), bundid),
 				})
+				kextamount++
 			}
 		}
 		var kstatus = widget.NewRichText(
@@ -106,7 +116,7 @@ func PCIPage() fyne.CanvasObject {
 				Text: "0 kexts",
 			},
 		)
-		if len(rt.Segments)-1 != 0 {
+		if kextamount != 0 {
 			kstatus = widget.NewRichText(
 				&widget.TextSegment{
 					Style: widget.RichTextStyle{
@@ -114,7 +124,7 @@ func PCIPage() fyne.CanvasObject {
 						TextStyle: widget.RichTextStyleStrong.TextStyle,
 						ColorName: theme.ColorNameSuccess,
 					},
-					Text: fmt.Sprintf("%d kexts", len(rt.Segments)-1),
+					Text: fmt.Sprintf("%d kexts", kextamount),
 				},
 			)
 		}

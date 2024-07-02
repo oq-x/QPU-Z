@@ -15,13 +15,13 @@ type MemoryModule struct {
 	SerialNumber string
 }
 
-func GetMemory() map[string]MemoryModule {
+func GetMemory() []MemoryModule {
 	output, _ := util.Command("system_profiler SPMemoryDataType | awk '/Size:/{print \"\";print} /Type:|Speed:|Serial Number:|Manufacturer/'")
-	modules := make(map[string]MemoryModule)
-	for i, stick := range strings.Split(string(output), "\n\n") {
+	var modules []MemoryModule
+	for i, module := range strings.Split(string(output), "\n\n") {
 		id := fmt.Sprint(i)
 		data := make(map[string]string)
-		for _, l := range strings.Split(stick, "\n") {
+		for _, l := range strings.Split(module, "\n") {
 			if l == "" {
 				continue
 			}
@@ -33,14 +33,14 @@ func GetMemory() map[string]MemoryModule {
 			}
 			data[sp[0]] = val
 		}
-		modules[id] = MemoryModule{
+		modules = append(modules, MemoryModule{
 			ID:           id,
 			Size:         data["Size"],
 			Type:         data["Type"],
 			Speed:        data["Speed"],
 			Manufacturer: data["Manufacturer"],
 			SerialNumber: data["Serial Number"],
-		}
+		})
 	}
 	return modules
 }

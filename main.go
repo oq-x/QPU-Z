@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-	util.FetchPCIID()
 	app := app.New()
 	window := app.NewWindow("HacSpeccer")
 
@@ -23,6 +22,7 @@ func main() {
 		}))
 		window.SetContent(content)
 	} else {
+		util.FetchPCIID()
 		util.IORegistry = util.FetchIORegistry()
 		tabs := container.NewAppTabs(
 			container.NewTabItem("Board", pages.BoardPage()),

@@ -7,10 +7,81 @@ import (
 	"howett.net/plist"
 )
 
+type RegPCIDevice map[string]any
+
+func (r RegPCIDevice) BuiltIn() bool {
+	v, ok := r["built-in"].([]byte)
+	return ok && len(v) != 0 && v[0] == 1
+}
+
+func (r RegPCIDevice) DataKey(key string) []byte {
+	v, _ := r[key].([]byte)
+
+	return v
+}
+
+func (r RegPCIDevice) StringKey(key string) string {
+	v, _ := r[key].(string)
+
+	return v
+}
+
+func (r RegPCIDevice) IORegistryEntryName() string {
+	return r.StringKey("IORegistryEntryName")
+}
+
+func (r RegPCIDevice) Name() string {
+	return r.StringKey("name")
+}
+
+func (r RegPCIDevice) IOName() string {
+	return r.StringKey("IOName")
+}
+
+func (r RegPCIDevice) VendorID() string {
+	v, ok := r["vendor-id"].([]byte)
+
+	if !ok || len(v) != 4 {
+		return ""
+	}
+
+	return PlistDataToLEHex(v)
+}
+
+func (r RegPCIDevice) DeviceID() string {
+	v, ok := r["device-id"].([]byte)
+
+	if !ok || len(v) != 4 {
+		return ""
+	}
+
+	return PlistDataToLEHex(v)
+}
+
+func (r RegPCIDevice) SubsystemVendorID() string {
+	v, ok := r["subsystem-vendor-id"].([]byte)
+
+	if !ok || len(v) != 4 {
+		return ""
+	}
+
+	return PlistDataToLEHex(v)
+}
+
+func (r RegPCIDevice) SubsystemID() string {
+	v, ok := r["subsystem-id"].([]byte)
+
+	if !ok || len(v) != 4 {
+		return ""
+	}
+
+	return PlistDataToLEHex(v)
+}
+
 var IORegistry ioregistry
 
 type ioregistry struct {
-	Devices map[string]map[string]interface{}
+	PciDevices []RegPCIDevice
 
 	GPUAccelerated bool
 }
@@ -33,8 +104,6 @@ func FetchIORegistry() ioregistry {
 	l, _ := Command("ioreg -a -l")
 	plist.Unmarshal(l, data)
 
-	var devices = make(map[string]map[string]any)
-
 	_, nok := data["IONDRVFramebufferGeneration"]
 	rootCh0, _ := data["IORegistryEntryChildren"].([]any)[0].(map[string]any)
 	rootCh0ACPI, _ := rootCh0["IORegistryEntryChildren"].([]any)[0].(map[string]any)
@@ -50,13 +119,17 @@ func FetchIORegistry() ioregistry {
 		}
 	}
 	rootCh0ACPIPCI0ACPI, _ := rootCh0ACPIPCI0["IORegistryEntryChildren"].([]any)[0].(map[string]any)
-	for _, ch := range rootCh0ACPIPCI0ACPI["IORegistryEntryChildren"].([]any) {
+	rootCh0ACPIPCI0ACPIch := rootCh0ACPIPCI0ACPI["IORegistryEntryChildren"].([]any)
+	var devices = make([]RegPCIDevice, len(rootCh0ACPIPCI0ACPIch))
+
+	for i, ch := range rootCh0ACPIPCI0ACPIch {
 		m, ok := ch.(map[string]any)
 		if !ok {
 			continue
 		}
-		devices[m["IORegistryEntryName"].(string)] = m
+
+		devices[i] = m
 	}
 
-	return ioregistry{Devices: devices, GPUAccelerated: !nok}
+	return ioregistry{PciDevices: devices, GPUAccelerated: !nok}
 }

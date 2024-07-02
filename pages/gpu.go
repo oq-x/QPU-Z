@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"embed"
 	"fmt"
 	"qpu-z/specs"
 	"qpu-z/util"
@@ -13,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func GPUPage(assets embed.FS) fyne.CanvasObject {
+func GPUPage() fyne.CanvasObject {
 	gpus := specs.GetGPUs()
 	cont := container.NewVBox()
 	for _, gpu := range gpus {
@@ -21,7 +20,7 @@ func GPUPage(assets embed.FS) fyne.CanvasObject {
 		if gpu.VendorID != "" {
 			vendorText += fmt.Sprintf(" (0x%s)", gpu.VendorID)
 		}
-		vendorLogo := util.GetIcon(assets, gpu.Vendor, true)
+		vendorLogo := util.GetIcon(gpu.Vendor, true)
 		vendorLogo.FillMode = canvas.ImageFillContain
 		vendorLogo.ScaleMode = canvas.ImageScaleFastest
 

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os/exec"
 
 	"howett.net/plist"
@@ -10,6 +11,8 @@ var IORegistry ioregistry
 
 type ioregistry struct {
 	Devices map[string]map[string]interface{}
+
+	GPUAccelerated bool
 }
 
 func Command(command string) ([]byte, error) {
@@ -21,49 +24,39 @@ func Command(command string) ([]byte, error) {
 	return output, nil
 }
 
-func loopChildren(class map[string]interface{}) map[string]interface{} {
-	children, ok := class["IORegistryEntryChildren"].([]interface{})
-	if (class["IORegistryEntryChildren"] == nil || class["model"] != nil) || !ok {
-		return class
-	}
-	for _, v := range children {
-		v, ok := v.(map[string]interface{})
-		if ok {
-			if v["IORegistryEntryChildren"] == nil || class["model"] != nil {
-				return v
-			} else {
-				return loopChildren(v)
-			}
-		}
-	}
-	return map[string]interface{}{}
+func PlistDataToLEHex(data []byte) string {
+	return fmt.Sprintf("%02x%02x", data[1], data[0])
 }
 
 func FetchIORegistry() ioregistry {
 	var data = make(map[string]interface{})
-	l, _ := Command("ioreg -a -k IOName")
+	l, _ := Command("ioreg -a -l")
 	plist.Unmarshal(l, data)
-	ch := data["IORegistryEntryChildren"].([]interface{})[0].(map[string]interface{})["IORegistryEntryChildren"].([]interface{})[0].(map[string]interface{})["IORegistryEntryChildren"].([]interface{})
-	devices := make(map[string]map[string]interface{})
-	for _, v := range ch {
-		v, ok := v.(map[string]interface{})
-		if ok {
-			if v["IORegistryEntryName"] == "PCI0" {
-				ch := v["IORegistryEntryChildren"].([]interface{})[0].(map[string]interface{})["IORegistryEntryChildren"].([]interface{})
-				for _, v := range ch {
-					v, ok := v.(map[string]interface{})
-					if !ok || v["IORegistryEntryChildren"] == nil {
-						continue
-					}
 
-					device := loopChildren(v)
-					if device["model"] == nil {
-						continue
-					}
-					devices[device["IORegistryEntryName"].(string)] = device
-				}
-			}
+	var devices = make(map[string]map[string]any)
+
+	_, nok := data["IONDRVFramebufferGeneration"]
+	rootCh0, _ := data["IORegistryEntryChildren"].([]any)[0].(map[string]any)
+	rootCh0ACPI, _ := rootCh0["IORegistryEntryChildren"].([]any)[0].(map[string]any)
+	var rootCh0ACPIPCI0 map[string]any
+	for _, ch := range rootCh0ACPI["IORegistryEntryChildren"].([]any) {
+		m, ok := ch.(map[string]any)
+		if !ok {
+			continue
+		}
+		if m["IORegistryEntryName"] == "PCI0" {
+			rootCh0ACPIPCI0 = m
+			break
 		}
 	}
-	return ioregistry{Devices: devices}
+	rootCh0ACPIPCI0ACPI, _ := rootCh0ACPIPCI0["IORegistryEntryChildren"].([]any)[0].(map[string]any)
+	for _, ch := range rootCh0ACPIPCI0ACPI["IORegistryEntryChildren"].([]any) {
+		m, ok := ch.(map[string]any)
+		if !ok {
+			continue
+		}
+		devices[m["IORegistryEntryName"].(string)] = m
+	}
+
+	return ioregistry{Devices: devices, GPUAccelerated: !nok}
 }

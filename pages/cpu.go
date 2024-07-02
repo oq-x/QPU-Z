@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"embed"
 	"fmt"
 	"qpu-z/specs"
 
@@ -13,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func CPUPage(assets embed.FS) fyne.CanvasObject {
+func CPUPage() fyne.CanvasObject {
 	cpu := specs.GetCPU()
 	if cpu.Count >= 2 {
 		cpu.Model += fmt.Sprintf(" (x%d)", cpu.Count)
@@ -51,11 +50,11 @@ func CPUPage(assets embed.FS) fyne.CanvasObject {
 			Style: widget.RichTextStyleStrong,
 		},
 		&widget.TextSegment{
-			Text: cpu.GenerationDisplayName,
+			Text: fmt.Sprintf("%s (%d/%d)", cpu.GenerationDisplayName, cpu.GenerationFamily, cpu.GenerationModel),
 		},
 	)
 
-	icon := util.GetIcon(assets, cpu.Vendor, false)
+	icon := util.GetIcon(cpu.Vendor, false)
 	icon.SetMinSize(fyne.NewSize(200, 200))
 	icon.FillMode = canvas.ImageFillContain
 	icon.ScaleMode = canvas.ImageScaleFastest

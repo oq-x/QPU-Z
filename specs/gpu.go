@@ -75,7 +75,10 @@ func GetGPUs() []GPU {
 		vendorId := parseData(g["vendor-id"].([]byte))
 		deviceId := parseData(g["device-id"].([]byte))
 		subsystemId := parseData(g["subsystem-vendor-id"].([]byte)) + parseData(g["subsystem-id"].([]byte))
-		gpuExtended := util.GetDevice(vendorId, deviceId)
+		gpuExtended, ok := util.PCIDeviceCache.Device(vendorId, deviceId)
+		if !ok {
+			continue
+		}
 		core := strings.Split(gpuExtended.Name, "[")[0]
 		vram := ""
 		if g["VRAM,totalMB"] != nil {

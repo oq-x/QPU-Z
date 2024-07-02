@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type StickRAM struct {
+type MemoryModule struct {
 	ID           string
 	Size         string
 	Type         string
@@ -15,9 +15,9 @@ type StickRAM struct {
 	SerialNumber string
 }
 
-func GetMemory() map[string]StickRAM {
+func GetMemory() map[string]MemoryModule {
 	output, _ := util.Command("system_profiler SPMemoryDataType | awk '/Size:/{print \"\";print} /Type:|Speed:|Serial Number:|Manufacturer/'")
-	sticks := make(map[string]StickRAM)
+	modules := make(map[string]MemoryModule)
 	for i, stick := range strings.Split(string(output), "\n\n") {
 		id := fmt.Sprint(i)
 		data := make(map[string]string)
@@ -33,7 +33,7 @@ func GetMemory() map[string]StickRAM {
 			}
 			data[sp[0]] = val
 		}
-		sticks[id] = StickRAM{
+		modules[id] = MemoryModule{
 			ID:           id,
 			Size:         data["Size"],
 			Type:         data["Type"],
@@ -42,5 +42,5 @@ func GetMemory() map[string]StickRAM {
 			SerialNumber: data["Serial Number"],
 		}
 	}
-	return sticks
+	return modules
 }
